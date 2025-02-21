@@ -4,63 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks</title>
+    <link rel="icon" href="data:,">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; }
-        .container { max-width: 500px; margin: auto; padding: 20px; background: white; border-radius: 10px; }
-        input, button { width: 100%; padding: 10px; margin: 10px 0; }
-        button { background: #007BFF; color: white; border: none; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .task { background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 5px solid #007BFF; }
-    </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Manage Your Tasks</h2>
-        <button onclick="logout()">Logout</button>
-        <h3>Tasks</h3>
-        <input type="text" id="taskInput" placeholder="Enter task">
-        <button onclick="addTask()">Add Task</button>
-        <div id="taskList"></div>
-    </div>
+    <h2>Manage Your Tasks</h2>
+    <button onclick="logout()">Logout</button>
+    <h3>Tasks</h3>
+    <input type="text" id="taskInput" placeholder="Enter task">
+    <button onclick="addTask()">Add Task</button>
+    <div id="taskList"></div>
 
     <script>
-        function checkAuth() {
-            fetch("https://task-manager-backend.onrender.com/auth-status")
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.authenticated) {
-                        alert("You are not logged in! Redirecting to login...");
-                        window.location.href = "login.html";
-                    }
-                })
-                .catch(error => console.error("Auth check failed:", error));
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyCN1Op4gNcFCdJVrmZyZ36PEcJYBZVa6Mo",
+            authDomain: "taskmanagerapp-e0707.firebaseapp.com",
+            projectId: "taskmanagerapp-e0707",
+            storageBucket: "taskmanagerapp-e0707.appspot.com",
+            messagingSenderId: "812471834156",
+            appId: "1:812471834156:web:b54a94c3b78e5ae03b2389",
+            measurementId: "G-TD5CHYQ5RM"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         function logout() {
-            fetch("https://task-manager-backend.onrender.com/logout")
-                .then(() => {
-                    window.location.href = "login.html";
-                });
+            auth.signOut().then(() => {
+                window.location.href = "login.html";
+            });
         }
 
         function addTask() {
             const taskText = document.getElementById("taskInput").value;
+            const user = auth.currentUser;
 
-            fetch("https://task-manager-backend.onrender.com/add-task", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ task: taskText }),
-            }).then(() => {
-                alert("Task added!");
-                document.getElementById("taskInput").value = "";
+            if (user && taskText.trim() !== "") {
+                db.collection("tasks").add({
+                    userId: user.uid,
+                    task: taskText,
+                    createdAt: new Date()
+                }).then(() => {
+                    alert("Task added!");
+                    document.getElementById("taskInput").value = "";
+                    loadTasks();
+                });
+            }
+        }
+
+        function loadTasks() {
+            const user = auth.currentUser;
+            const taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+
+            db.collection("tasks").where("userId", "==", user.uid).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const taskDiv = document.createElement("div");
+                    taskDiv.innerHTML = `
+                        ${doc.data().task} 
+                        <button onclick="deleteTask('${doc.id}')">Delete</button>
+                    `;
+                    taskList.appendChild(taskDiv);
+                });
             });
         }
 
-        checkAuth();
+        function deleteTask(taskId) {
+            db.collection("tasks").doc(taskId).delete().then(() => {
+                loadTasks();
+            });
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loadTasks();
+            } else {
+                window.location.href = "login.html";
+            }
+        });
     </script>
 
 </body>
