@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+        input, button {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .task-list {
+            text-align: left;
+            margin-top: 20px;
+        }
+        .task {
+            background: #007BFF;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Task Manager</h2>
+
+        <div id="authSection">
+            <h3>Sign Up / Login</h3>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="signup()">Sign Up</button>
+            <button onclick="login()">Login</button>
+        </div>
+
+        <div id="taskSection" style="display:none;">
+            <h3>Welcome <span id="userEmail"></span></h3>
+            <button onclick="logout()">Logout</button>
+            <h3>Your Tasks</h3>
+            <input type="text" id="taskInput" placeholder="Enter task">
+            <button onclick="addTask()">Add Task</button>
+            <div class="task-list" id="taskList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCN1Op4gNcFCdJVrmZyZ36PEcJYBZVa6Mo",
+            authDomain: "taskmanagerapp-e0707.firebaseapp.com",
+            projectId: "taskmanagerapp-e0707",
+            storageBucket: "taskmanagerapp-e0707.appspot.com",
+            messagingSenderId: "812471834156",
+            appId: "1:812471834156:web:b54a94c3b78e5ae03b2389",
+            measurementId: "G-TD5CHYQ5RM"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Sign Up
+        function signup() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    alert("User Signed Up!");
+                    showTaskSection(userCredential.user);
+                })
+                .catch(error => alert(error.message));
+        }
+
+        // Login
+        function login() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    alert("Login Successful!");
+                    showTaskSection(userCredential.user);
+                })
+                .catch(error => alert(error.message));
+        }
+
+        // Logout
+        function logout() {
+            auth.signOut().then(() => {
+                document.getElementById("authSection").style.display = "block";
+                document.getElementById("taskSection").style.display = "none";
+            });
+        }
+
+        // Show Task Section after Login
+        function showTaskSection(user) {
+            document.getElementById("authSection").style.display = "none";
+            document.getElementById("taskSection").style.display = "block";
+            document.getElementById("userEmail").innerText = user.email;
+            loadTasks(user.uid);
+        }
+
+        // Add Task to Firestore
+        function addTask() {
+            const taskText = document.getElementById("taskInput").value;
+            const user = auth.currentUser;
+            
+            if (user && taskText.trim() !== "") {
+                db.collection("tasks").add({
+                    userId: user.uid,
+                    task: taskText,
+                    createdAt: new Date()
+                }).then(() => {
+                    alert("Task Added!");
+                    document.getElementById("taskInput").value = "";
+                    loadTasks(user.uid);
+                });
+            }
+        }
+
+        // Load Tasks from Firestore
+        function loadTasks(userId) {
+            const taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+
+            db.collection("tasks").where("userId", "==", userId).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const taskDiv = document.createElement("div");
+                    taskDiv.classList.add("task");
+                    taskDiv.innerText = doc.data().task;
+                    taskList.appendChild(taskDiv);
+                });
+            });
+        }
+
+        // Check if user is logged in
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                showTaskSection(user);
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Tasks & Notes</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #e3f2fd;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 50px;
+        }
+        h2 {
+            color: #007BFF;
+        }
+        input, textarea, button {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: block;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .task, .note {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 5px solid #007BFF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 5px;
+        }
+        .delete-btn {
+            background: red;
+            border: none;
+            padding: 5px 10px;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .delete-btn:hover {
+            background: darkred;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Manage Your Tasks & Notes</h2>
+
+        <button onclick="logout()">Logout</button>
+
+        <h3>Tasks</h3>
+        <input type="text" id="taskInput" placeholder="Enter task">
+        <button onclick="addTask()">Add Task</button>
+        <div id="taskList"></div>
+
+        <h3>Notes</h3>
+        <textarea id="noteInput" rows="4" placeholder="Enter note"></textarea>
+        <button onclick="addNote()">Add Note</button>
+        <div id="noteList"></div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCN1Op4gNcFCdJVrmZyZ36PEcJYBZVa6Mo",
+            authDomain: "taskmanagerapp-e0707.firebaseapp.com",
+            projectId: "taskmanagerapp-e0707",
+            storageBucket: "taskmanagerapp-e0707.appspot.com",
+            messagingSenderId: "812471834156",
+            appId: "1:812471834156:web:b54a94c3b78e5ae03b2389",
+            measurementId: "G-TD5CHYQ5RM"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Logout
+        function logout() {
+            auth.signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        }
+
+        // Add Task
+        function addTask() {
+            const taskText = document.getElementById("taskInput").value;
+            const user = auth.currentUser;
+
+            if (user && taskText.trim() !== "") {
+                db.collection("tasks").add({
+                    userId: user.uid,
+                    task: taskText,
+                    createdAt: new Date()
+                }).then(() => {
+                    document.getElementById("taskInput").value = "";
+                    loadTasks();
+                });
+            }
+        }
+
+        // Load Tasks
+        function loadTasks() {
+            const user = auth.currentUser;
+            const taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+
+            db.collection("tasks").where("userId", "==", user.uid).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const taskDiv = document.createElement("div");
+                    taskDiv.classList.add("task");
+                    taskDiv.innerHTML = `
+                        ${doc.data().task}
+                        <button class="delete-btn" onclick="deleteTask('${doc.id}')">X</button>
+                    `;
+                    taskList.appendChild(taskDiv);
+                });
+            });
+        }
+
+        // Delete Task
+        function deleteTask(taskId) {
+            db.collection("tasks").doc(taskId).delete().then(() => {
+                loadTasks();
+            });
+        }
+
+        // Add Note
+        function addNote() {
+            const noteText = document.getElementById("noteInput").value;
+            const user = auth.currentUser;
+
+            if (user && noteText.trim() !== "") {
+                db.collection("notes").add({
+                    userId: user.uid,
+                    note: noteText,
+                    createdAt: new Date()
+                }).then(() => {
+                    document.getElementById("noteInput").value = "";
+                    loadNotes();
+                });
+            }
+        }
+
+        // Load Notes
+        function loadNotes() {
+            const user = auth.currentUser;
+            const noteList = document.getElementById("noteList");
+            noteList.innerHTML = "";
+
+            db.collection("notes").where("userId", "==", user.uid).get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const noteDiv = document.createElement("div");
+                    noteDiv.classList.add("note");
+                    noteDiv.innerHTML = `
+                        ${doc.data().note}
+                        <button class="delete-btn" onclick="deleteNote('${doc.id}')">X</button>
+                    `;
+                    noteList.appendChild(noteDiv);
+                });
+            });
+        }
+
+        // Delete Note
+        function deleteNote(noteId) {
+            db.collection("notes").doc(noteId).delete().then(() => {
+                loadNotes();
+            });
+        }
+
+        // Check if user is logged in
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loadTasks();
+                loadNotes();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+
+</body>
+</html>
