@@ -1,47 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup</title>
-    <link rel="icon" href="data:,">
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signup - Task Manager</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <style>
+    /* Heavy styling for signup page */
+    body {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .signup-container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      background: #667eea;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #556cd6;
+    }
+    p {
+      margin-top: 20px;
+      color: #555;
+    }
+    a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-
-    <h2>Signup</h2>
-    <input type="email" id="email" placeholder="Enter email">
-    <input type="password" id="password" placeholder="Enter password">
+  <div class="signup-container">
+    <h2>Create an Account</h2>
+    <input type="email" id="email" placeholder="Email Address">
+    <input type="password" id="password" placeholder="Password">
     <button onclick="signup()">Sign Up</button>
     <p>Already have an account? <a href="login.html">Login here</a></p>
+  </div>
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCN1Op4gNcFCdJVrmZyZ36PEcJYBZVa6Mo",
+      authDomain: "taskmanagerapp-e0707.firebaseapp.com",
+      projectId: "taskmanagerapp-e0707",
+      storageBucket: "taskmanagerapp-e0707.appspot.com",
+      messagingSenderId: "812471834156",
+      appId: "1:812471834156:web:b54a94c3b78e5ae03b2389",
+      measurementId: "G-TD5CHYQ5RM"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCN1Op4gNcFCdJVrmZyZ36PEcJYBZVa6Mo",
-            authDomain: "taskmanagerapp-e0707.firebaseapp.com",
-            projectId: "taskmanagerapp-e0707",
-            storageBucket: "taskmanagerapp-e0707.appspot.com",
-            messagingSenderId: "812471834156",
-            appId: "1:812471834156:web:b54a94c3b78e5ae03b2389",
-            measurementId: "G-TD5CHYQ5RM"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        function signup() {
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(() => {
-                    alert("Signup successful! Redirecting to login...");
-                    window.location.href = "login.html";
-                })
-                .catch(error => alert("Error: " + error.message));
-        }
-    </script>
-
+    // Signup function
+    function signup() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          alert("Signup successful! Redirecting to login...");
+          window.location.href = "login.html";
+        })
+        .catch(error => {
+          alert("Error: " + error.message);
+        });
+    }
+  </script>
 </body>
 </html>

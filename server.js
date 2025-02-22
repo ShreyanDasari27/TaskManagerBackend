@@ -1,24 +1,25 @@
 const express = require("express");
 const admin = require("firebase-admin");
-const { initializeApp } = require("firebase/app");
-const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = require("firebase/auth");
-const { getFirestore, collection, addDoc, getDocs, query, where } = require("firebase/firestore");
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Load Firebase Admin credentials
+// Load Firebase Admin credentials from an environment variable
+// Make sure that process.env.FIREBASE_CONFIG contains a valid JSON string.
 const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  // Optionally, set the databaseURL if needed:
+  // databaseURL: "https://<your-project-id>.firebaseio.com"
 });
 
 console.log("Connected to Firebase Admin SDK!");
 
-// Firebase client-side configuration
+// Firebase configuration (used only for REST API calls during login)
 const firebaseConfig = {
   apiKey: "AIzaSyCN1Op4gNcFCdJVrmZyZ36PEcJYBZVa6Mo",
   authDomain: "taskmanagerapp-e0707.firebaseapp.com",
@@ -29,16 +30,14 @@ const firebaseConfig = {
   measurementId: "G-TD5CHYQ5RM",
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
-
-console.log("Firebase App initialized!");
+// Use Firebase Admin Firestore
+const db = admin.firestore();
+console.log("Firebase Firestore initialized!");
 
 // Middleware to parse JSON data
 app.use(express.json());
 
-// Serve static files (HTML, CSS, JS)
+// Serve static files (HTML, CSS, JS) from the current directory
 app.use(express.static(path.join(__dirname)));
 
 // Routes to serve HTML pages
@@ -50,25 +49,37 @@ app.get("/tasks", (req, res) => {
   res.sendFile(path.join(__dirname, "tasks.html"));
 });
 
-// API Route for User Signup
+// API Route for User Signup using admin.auth()
 app.post("/signup", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    res.json({ message: "User created successfully!", user: userCredential.user });
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+    });
+    res.json({ message: "User created successfully!", user: userRecord });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(400).json({ error: error.message });
   }
 });
 
-// API Route for User Login
+// API Route for User Login using Firebase Auth REST API
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    res.json({ message: "Login successful!", user: userCredential.user });
+    const response = await axios.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`,
+      {
+        email,
+        password,
+        returnSecureToken: true,
+      }
+    );
+    res.json({ message: "Login successful!", user: response.data });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Login error:", error.response.data);
+    res.status(400).json({ error: error.response.data.error.message });
   }
 });
 
